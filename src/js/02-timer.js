@@ -1,7 +1,9 @@
-// Описан в документации
+// Импорт календаря
 import flatpickr from "flatpickr";
 // Дополнительный импорт стилей
 import "flatpickr/dist/flatpickr.min.css";
+// Импорт алерта
+import Notiflix from 'notiflix';
 
 // = Функция convertMs() возвращает объект с рассчитанным оставшимся временем до конечной даты===========================================================================
 
@@ -23,12 +25,22 @@ function convertMs(ms) {
 
   return { days, hours, minutes, seconds };
 }
-
-// console.log(convertMs(2000)); // {days: 0, hours: 0, minutes: 0, seconds: 2}
-// console.log(convertMs(140000)); // {days: 0, hours: 0, minutes: 2, seconds: 20}
 // console.log(convertMs(24140000)); // {days: 0, hours: 6 minutes: 42, seconds: 20}
 
 // =================================================================================
+const inputForm = document.querySelector('#datetime-picker');
+const startButton = document.querySelector('button[data-start]');
+
+const daysSpan = document.querySelector('span[data-days]');
+const hoursSpan = document.querySelector('span[data-hours]');
+const minutesSpan = document.querySelector('span[data-minutes]');
+const secondsSpan = document.querySelector('span[data-seconds]');
+
+startButton.disabled = true;
+
+let countDown = {};
+let currentDate = new Date();
+let selectedDate = new Date();
 
 const options = {
   enableTime: true,
@@ -36,31 +48,40 @@ const options = {
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    console.log(selectedDates[0]);
+      selectedDate = selectedDates[0];
+    if (selectedDate > currentDate) {
+        startButton.disabled = false;
+    } else {
+        Notiflix.Notify.warning('Please choose a date in the future');
+        // window.alert("Please choose a date in the future");
+    }
   },
 };
 
-const inputForm = document.querySelector('#date-selector');
+flatpickr(inputForm, options);
 
-inputForm.addEventListener('change', selectDate);
+startButton.addEventListener('click', onClick);
 
-function selectDate() {
-    const selectedDate = new Date(inputForm.value);
-    if (selectedDate > currentDate) {
-        // convertMs(selectedDate - currentDate);
-        console.log(convertMs(selectedDate - currentDate));
-        
-    }
+function onClick() {
+    const timerId = setInterval(() => {
+        currentDate = new Date();
+
+        if (currentDate < selectedDate) {
+            countDown = convertMs(selectedDate - currentDate);
+            showCountDown(countDown);
+        } else {
+            clearInterval(timerId);
+        }
+    }, 1000);
+};
+    
+function showCountDown(countDown) {
+    daysSpan.textContent = addLeadingZero(countDown.days);
+    hoursSpan.textContent = addLeadingZero(countDown.hours);
+    minutesSpan.textContent = addLeadingZero(countDown.minutes);
+    secondsSpan.textContent = addLeadingZero(countDown.seconds);
 }
 
-
-const currentDate = new Date();
-
-
-// flatpickr(selector, options)
-
-// window.alert("Please choose a date in the future");
-
-// Напиши функцию addLeadingZero(value),
-// которая использует метод метод padStart() 
-// и перед отрисовкой интефрейса форматируй значение.
+function addLeadingZero(value) {
+    return value.toString().padStart(2, "0");
+}
